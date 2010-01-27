@@ -6,7 +6,11 @@ abstract class Query(mode: QueryMode.Value) {
   
   var conditions = Conditions.empty
   
-  var orderClause: Option[String] = None
+  var order = Order.empty
+  
+  var limit = Limit.empty
+  
+  var offset = Offset.empty
   
   def table(name: String) = {
     tableFields += name -> Array("*")
@@ -18,34 +22,32 @@ abstract class Query(mode: QueryMode.Value) {
     this
   }
 
-  def where(conditions: Conditions) = {
-    this.conditions = conditions
-    this
-  }
-
-  def whereClause: String = conditions.toSql
-  
   def whereArgs: Array[Any] = if (conditions.hasNamedArgs)
     Array[Any]()
   else
     conditions.args.map(_.value)
 
-  def order(orderClause: Option[String]) = {
-    orderClause match {
-      case Some(o) => this.orderClause = Some(" order by " + o)
-    }
-    this
-  }
-    
   def toSql: String
   
 }
 
-object Order {
-  def apply(order: String) = Some(order)
+trait QueryClause {
+  def toSql: String
 }
 
-case class Conditions(val clause: Option[String], val args: Array[WhereArg]) {
+class Order(val clause: Option[String]) extends QueryClause {
+  def toSql = clause match {
+    case Some(o) => " order by " + o
+    case _ => ""
+  }
+}
+
+object Order {
+  val empty = new Order(None)
+  def apply(order: String) = new Order(Some(order))
+}
+
+class Conditions(val clause: Option[String], val args: Array[WhereArg]) extends QueryClause {
   def isEmpty = clause.isEmpty && args.isEmpty
   def hasNamedArgs = args.find(_.isNamed).isDefined
   def toSql = clause match {
@@ -89,4 +91,28 @@ case class WhereArg(val name: Option[Symbol] = None, val value: Any) {
 object WhereArg {
   def apply(value: Any) = new WhereArg(None, value)
   def apply(name: Symbol, value: Any) = new WhereArg(Some(name), value)
+}
+
+class Limit(limit: Option[Int]) extends QueryClause {
+  def toSql = limit match {
+    case Some(l) => " limit " + l
+    case _ => ""
+  }
+}
+
+object Limit {
+  def empty = new Limit(None)
+  def apply(limit: Int) = new Limit(Some(limit))
+}
+
+class Offset(offset: Option[Long]) extends QueryClause {
+  def toSql = offset match {
+    case Some(o) => " offset " + o
+    case _ => ""
+  }
+}
+
+object Offset {
+  def empty = new Offset(None)
+  def apply(offset: Long) = new Offset(Some(offset))
 }

@@ -15,6 +15,19 @@ abstract class Adapter {
       closeable.close()
     }
   
+  def execute(conn: Connection, query: Query): Int = {
+    val stmt = conn.prepareStatement(query.toSql)
+    var result = List.empty[Any]
+    using(stmt) { stmt =>
+      var i = 0
+      query.whereArgs.foreach { a =>
+        i += 1
+        stmt.setObject(i, a)
+      }
+      stmt.executeUpdate
+    }
+  }
+  
   def execute(conn: Connection, query: Query, mapper: Mapper): List[Any] = {
     println("QUERY = " + query.toSql)
     println("ARGS = " + query.whereArgs.mkString(","))
@@ -38,5 +51,5 @@ abstract class Adapter {
     }
     result.reverse
   }
-  
+    
 }
