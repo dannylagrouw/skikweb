@@ -5,10 +5,10 @@ import java.sql.ResultSetMetaData
 import org.apache.commons.beanutils._
 import net.skik.util.LangUtils._
 
-trait Mapper {
+abstract class Mapper[T] {
 
   var metaData: ResultSetMetaData = _
   
-  def map(rs: ResultSet, n: Int): Any
+  def map(rs: ResultSet, n: Int): T
   
 }

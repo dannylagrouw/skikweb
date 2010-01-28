@@ -5,7 +5,7 @@ import java.sql.ResultSetMetaData
 import org.apache.commons.beanutils._
 import net.skik.util.LangUtils._
 
-class ClassMapper(modelClass: Class[_]) extends Mapper {
+class ClassMapper[T](modelClass: Class[T]) extends Mapper[T] {
 
   //var metaData: ResultSetMetaData = _
   
@@ -24,10 +24,14 @@ class ClassMapper(modelClass: Class[_]) extends Mapper {
 
 object ClassMapper {
   
-  def apply(modelClass: Class[_]): Mapper = apply(withDo(modelClass.getName) { c =>
+  private def baseClass(modelClass: String) =
+    if (modelClass.takeRight(1) == "$") modelClass.dropRight(1) else modelClass
+  
+  def apply[T](modelClass: Class[T]): Mapper[T] = apply(withDo(modelClass.getName) { c =>
     if (c.takeRight(1) == "$") c.dropRight(1) else c
   })
 
-  def apply(modelClass: String) = new ClassMapper(Class.forName(modelClass))
+//  def apply[T](modelClass: String): Mapper[T] = new ClassMapper[T](Class.forName(modelClass).asInstanceOf[Class[T]])
+  def apply[T](modelClass: String): Mapper[T] = new ClassMapper[T](Class.forName(baseClass(modelClass)).asInstanceOf[Class[T]])
   
 }

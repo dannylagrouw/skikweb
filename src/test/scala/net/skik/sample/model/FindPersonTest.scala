@@ -6,7 +6,7 @@ import org.junit.Assert._
 import net.skik.model._
 import net.skik.sample.model._
 
-class PersonTest {
+class FindPersonTest {
 
   var lastId = 1
   
@@ -34,7 +34,7 @@ class PersonTest {
 
     val p = Person.find('all, Conditions("id = ?", 2))
     assertEquals(1, p.size)
-    assertEquals(2, p(0).asInstanceOf[Person].id)
+    assertEquals(2, p(0).id)
   }
     
   @Test
@@ -45,8 +45,8 @@ class PersonTest {
     val p = Person.find('all, Conditions("first_name = ? and last_name = ?", "Jan", "Jansen"))
         
     assertEquals(1, p.size)
-    assertEquals("Jan", p(0).asInstanceOf[Person].first_name)
-    assertEquals("Jansen", p(0).asInstanceOf[Person].last_name)
+    assertEquals("Jan", p(0).first_name)
+    assertEquals("Jansen", p(0).last_name)
   }
     
   @Test
@@ -57,8 +57,8 @@ class PersonTest {
     val p = Person.find('all, Conditions("id = ? and last_name = ?", 1, "Jansen"))
         
     assertEquals(1, p.size)
-    assertEquals("Jan", p(0).asInstanceOf[Person].first_name)
-    assertEquals("Jansen", p(0).asInstanceOf[Person].last_name)
+    assertEquals("Jan", p(0).first_name)
+    assertEquals("Jansen", p(0).last_name)
   }
 
   @Test
@@ -69,8 +69,8 @@ class PersonTest {
     val p = Person.find('all, Conditions("id = :id and last_name = :lnm", Map('id -> 1, 'lnm -> "Jansen")))
     
     assertEquals(1, p.size)
-    assertEquals("Jan", p(0).asInstanceOf[Person].first_name)
-    assertEquals("Jansen", p(0).asInstanceOf[Person].last_name)
+    assertEquals("Jan", p(0).first_name)
+    assertEquals("Jansen", p(0).last_name)
   }
       
   @Test
@@ -81,8 +81,8 @@ class PersonTest {
     val p = Person.find('all, Conditions(Map('id -> 2, 'last_name -> "Keizer")))
     
     assertEquals(1, p.size)
-    assertEquals("Piet", p(0).asInstanceOf[Person].first_name)
-    assertEquals("Keizer", p(0).asInstanceOf[Person].last_name)
+    assertEquals("Piet", p(0).first_name)
+    assertEquals("Keizer", p(0).last_name)
   }
 
   @Test
@@ -94,7 +94,7 @@ class PersonTest {
     
     assertEquals(2, p.size)
     println(p.mkString("\n"))
-    assertTrue(p(0).asInstanceOf[Person].last_name < p(1).asInstanceOf[Person].last_name)
+    assertTrue(p(0).last_name < p(1).last_name)
   }
 
   @Test
@@ -106,7 +106,7 @@ class PersonTest {
     
     assertEquals(2, p.size)
     println(p.mkString("\n"))
-    assertTrue(p(0).asInstanceOf[Person].last_name > p(1).asInstanceOf[Person].last_name)
+    assertTrue(p(0).last_name > p(1).last_name)
   }
 
   @Test
@@ -117,7 +117,7 @@ class PersonTest {
     val p = Person.find('all, Conditions(Map('last_name -> "Keizer")), Order("first_name"))
     
     assertEquals(2, p.size)
-    assertTrue(p(0).asInstanceOf[Person].first_name < p(1).asInstanceOf[Person].first_name)
+    assertTrue(p(0).first_name < p(1).first_name)
   }
 
   @Test

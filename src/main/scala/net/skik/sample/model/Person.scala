@@ -3,7 +3,7 @@ package net.skik.sample.model
 import net.skik.model.Base
 import scala.reflect.BeanProperty
 
-class Person extends Base {
+class Person extends Base[Person] {
 
   override val tableName = "people"
     

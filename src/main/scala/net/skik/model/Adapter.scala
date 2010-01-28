@@ -1,6 +1,7 @@
 package net.skik.model
 
 import java.sql.Connection
+import org.apache.commons.beanutils._
 
 abstract class Adapter {
 
@@ -28,11 +29,11 @@ abstract class Adapter {
     }
   }
   
-  def execute(conn: Connection, query: Query, mapper: Mapper): List[Any] = {
+  def execute[T](conn: Connection, query: Query, mapper: Mapper[T]): List[T] = {
     println("QUERY = " + query.toSql)
     println("ARGS = " + query.whereArgs.mkString(","))
     val stmt = conn.prepareStatement(query.toSql)
-    var result = List.empty[Any]
+    var result = List.empty[T]
     using(stmt) { stmt =>
       var i = 0
       query.whereArgs.foreach { a =>
@@ -50,6 +51,35 @@ abstract class Adapter {
       }
     }
     result.reverse
+  }
+  
+  def save[T](conn: Connection, modelObject: T, tableName: String): Unit = {
+    // TODO cache this
+    // TODO get schema name from config
+    // TODO wrap jdbc
+    // TODO error handling
+    // TODO abstract query, fields
+    // TODO handle custom primary key / generated key
+    println("SAVE get column info for " + tableName)
+    var columns = Map.empty[String, Any]
+    val dbmd = conn.getMetaData
+    val colsRS = dbmd.getColumns(null, "inschr_rer", tableName, null);
+    while (colsRS.next) {
+      val columnName = colsRS.getString("COLUMN_NAME")
+      if (PropertyUtils.isReadable(modelObject, columnName)) {
+        columns += (columnName -> PropertyUtils.getSimpleProperty(modelObject, columnName));
+      }
+    }
+    val query = "insert into " + tableName + " (" + columns.map(kv => kv._1).mkString(", ") +
+        ") values (" + columns.map(kv => "'" + kv._2 + "'").mkString(", ") + ")"
+    println("QUERY = " + query)
+    val stmt = conn.createStatement
+    stmt.execute(query);
+    
+    val keyRS = stmt.getGeneratedKeys
+    if (keyRS.next) {
+      PropertyUtils.setSimpleProperty(modelObject, "id", keyRS.getLong(1))
+    }
   }
     
 }

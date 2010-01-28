@@ -5,7 +5,7 @@ import java.sql.ResultSetMetaData
 import org.apache.commons.beanutils._
 import net.skik.util.LangUtils._
 
-class MapMapper extends Mapper {
+class MapMapper extends Mapper[Map[String, Any]] {
 
   override def map(rs: ResultSet, n: Int) = {
     var m = Map.empty[String, Any]
