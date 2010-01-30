@@ -172,5 +172,17 @@ class FindPersonTest {
     lastId += 1
   }
   
+  @Test
+  def testSelectPersonById_SomeFields: Unit = {
+    insertPerson("Jan", "Jansen")
+    insertPerson("Piet", "Keizer")
+
+    val p = Person.findFirst(Select("id, first_name"), Conditions("id = 2"))
+    
+    assertEquals(2, p.id)
+	assertEquals("Piet", p.first_name)
+	assertEquals(null, p.last_name)
+  }
+ 
   // findBy('first_name -> "Jan", 'last_name -> "Jansen")
 }

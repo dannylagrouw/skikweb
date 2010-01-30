@@ -33,13 +33,18 @@ abstract class Base[T <: Base[T]] {
     }    
   }
 
-  def find(mode: Symbol, clauses: QueryClause*) = {
+  def findFirst(clauses: QueryClause*): T = find('first, clauses:_*).first
+
+  def findAll(clauses: QueryClause*): List[T] = find('all, clauses:_*)
+
+  def find(mode: Symbol, clauses: QueryClause*): List[T] = {
     execFindQuery(mode) {q: Query =>
       clauses.foreach {clause => clause match {
         case c: Conditions => q.conditions = c
         case c: Order => q.order = c
         case c: Limit => q.limit = c
         case c: Offset => q.offset = c
+		case c: Select => q.select = c
       }}
     }
   }

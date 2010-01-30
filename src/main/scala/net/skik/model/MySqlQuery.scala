@@ -5,7 +5,8 @@ class MySqlQuery(mode: QueryMode.Value) extends Query(mode) {
   override def toSql: String = {
     var i = 0
     var j = 0
-    "select " + tableFields.map { kv => i += 1; kv._2.map(f => "t" + i + "." + f).mkString(", ") }.mkString(", ") +
+    //"select " + tableFields.map { kv => i += 1; kv._2.map(f => "t" + i + "." + f).mkString(", ") }.mkString(", ") +
+    "select " + select.toSql +
       " from " + tableFields.map { kv => j += 1; kv._1 + " t" + j }.mkString(", ") +
       conditions.toSql + 
       order.toSql +

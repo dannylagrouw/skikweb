@@ -3,7 +3,9 @@ package net.skik.model
 abstract class Query(mode: QueryMode.Value) {
 
   var tableFields = Map.empty[String, Array[String]]
-  
+
+  var select = Select.empty
+
   var conditions = Conditions.empty
   
   var order = Order.empty
@@ -45,6 +47,18 @@ class Order(val clause: Option[String]) extends QueryClause {
 object Order {
   val empty = new Order(None)
   def apply(order: String) = new Order(Some(order))
+}
+
+class Select(val clause: Option[String]) extends QueryClause {
+  def toSql = clause match {
+    case Some(s) => s
+	case _ => "*"
+  }
+}
+
+object Select {
+  val empty = new Select(None)
+  def apply(select: String) = new Select(Some(select))
 }
 
 class Conditions(val clause: Option[String], val args: Array[WhereArg]) extends QueryClause {
