@@ -8,7 +8,8 @@ class MySqlQuery(mode: QueryMode.Value) extends Query(mode) {
     //"select " + tableFields.map { kv => i += 1; kv._2.map(f => "t" + i + "." + f).mkString(", ") }.mkString(", ") +
     "select " + select.toSql +
       " from " + tableFields.map { kv => j += 1; kv._1 + " t" + j }.mkString(", ") +
-      conditions.toSql + 
+      conditions.toSql +
+      group.toSql +
       order.toSql +
       (if (mode == QueryMode.FindFirst) " limit 1" else limit.toSql) +
       offset.toSql

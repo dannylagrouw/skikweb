@@ -12,7 +12,9 @@ class Person extends Base[Person] {
   @BeanProperty var first_name: String = _
   @BeanProperty var last_name: String = _
   
-  override def toString = "Person no " + id + ", name = " + first_name + " " + last_name
+  @BeanProperty var count_first_name: Long = 0
+  
+  override def toString = "Person no " + id + ", name = " + first_name + " " + last_name + (if (readonly) " R/O")
   
 }
 

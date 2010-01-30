@@ -9,6 +9,8 @@ abstract class Mapper[T] {
 
   var metaData: ResultSetMetaData = _
   
-  def map(rs: ResultSet, n: Int): T
+  var readonly: Boolean = false
+  
+  def map(rs: ResultSet): T
   
 }

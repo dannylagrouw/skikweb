@@ -14,6 +14,10 @@ abstract class Query(mode: QueryMode.Value) {
   
   var offset = Offset.empty
   
+  var readonly = Readonly(false)
+  
+  var group = Group.empty
+  
   def table(name: String) = {
     tableFields += name -> Array("*")
     this
@@ -49,6 +53,18 @@ object Order {
   def apply(order: String) = new Order(Some(order))
 }
 
+class Group(val clause: Option[String]) extends QueryClause {
+  def toSql = clause match {
+    case Some(o) => " group by " + o
+    case _ => ""
+  }
+}
+
+object Group {
+  val empty = new Group(None)
+  def apply(group: String) = new Group(Some(group))
+}
+
 class Select(val clause: Option[String]) extends QueryClause {
   def toSql = clause match {
     case Some(s) => s
@@ -59,6 +75,14 @@ class Select(val clause: Option[String]) extends QueryClause {
 object Select {
   val empty = new Select(None)
   def apply(select: String) = new Select(Some(select))
+}
+
+class Readonly(val readonly: Boolean) extends QueryClause {
+  def toSql = ""
+}
+
+object Readonly {
+  def apply(readonly: Boolean) = new Readonly(readonly)
 }
 
 class Conditions(val clause: Option[String], val args: Array[WhereArg]) extends QueryClause {

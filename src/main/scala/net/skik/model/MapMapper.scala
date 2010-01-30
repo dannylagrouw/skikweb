@@ -7,7 +7,7 @@ import net.skik.util.LangUtils._
 
 class MapMapper extends Mapper[Map[String, Any]] {
 
-  override def map(rs: ResultSet, n: Int) = {
+  override def map(rs: ResultSet) = {
     var m = Map.empty[String, Any]
     for (i <- 1 to metaData.getColumnCount) {
       val columnName = metaData.getColumnName(i)

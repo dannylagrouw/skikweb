@@ -42,9 +42,10 @@ abstract class Adapter {
       }
       if (stmt.execute) {
         mapper.metaData = stmt.getMetaData
+        mapper.readonly = query.readonly.readonly
         val rs = stmt.getResultSet
         while (rs.next) {
-          val o = mapper.map(rs, 1)
+          val o = mapper.map(rs)
           println("RESULT = " + o)
           result ::= o
         }

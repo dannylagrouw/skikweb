@@ -8,6 +8,7 @@ abstract class Base[T <: Base[T]] {
 
   val tableName: String
   val primaryKey = "id"
+  var readonly = false
   
   private def getObjectClass: Class[T] = Class.forName(getClass.getName.dropRight(1)).asInstanceOf[Class[T]]
     
@@ -42,9 +43,11 @@ abstract class Base[T <: Base[T]] {
       clauses.foreach {clause => clause match {
         case c: Conditions => q.conditions = c
         case c: Order => q.order = c
+        case c: Group => q.group = c
         case c: Limit => q.limit = c
         case c: Offset => q.offset = c
 		case c: Select => q.select = c
+		case c: Readonly => q.readonly = c
       }}
     }
   }

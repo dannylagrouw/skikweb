@@ -183,6 +183,49 @@ class FindPersonTest {
 	assertEquals("Piet", p.first_name)
 	assertEquals(null, p.last_name)
   }
+
+  @Test
+  def testSelectPerson_Readonly: Unit = {
+    insertPerson("Jan", "Jansen")
+    insertPerson("Piet", "Keizer")
+
+    val ps = Person.findAll(Readonly(true))
+    
+    assertEquals(2, ps.size)
+    assertEquals(true, ps(0).readonly)
+  }
  
+  @Test
+  def testSelectAllPeopleByName_GroupByName: Unit = {
+    insertPerson("Piet", "Keizer")
+    insertPerson("Piet", "Admiraal")
+    insertPerson("Piet", "Koning")
+    insertPerson("Jan", "Keizer")
+    insertPerson("Jan", "Davids")
+
+    val ps = Person.findAll(Select("first_name, count(*) as count_first_name"), Conditions("first_name = ? or first_name = ?", "Jan", "Piet"),
+        Group("first_name"), Order("first_name desc"))
+    
+    assertEquals(2, ps.size)
+  }
+
+  @Test
+  def testSelectFirst: Unit = {
+    insertPerson("Piet", "Koning")
+    insertPerson("Jan", "Keizer")
+
+    val p: Person = Person.findFirst()
+  }
+
+  @Test
+  def testSelectLast: Unit = {
+    insertPerson("Piet", "Koning")
+    insertPerson("Jan", "Keizer")
+
+    val p: Person = Person.findFirst(Order("id desc"))
+    
+    assertEquals(2, p.id)
+  }
+  
   // findBy('first_name -> "Jan", 'last_name -> "Jansen")
 }
