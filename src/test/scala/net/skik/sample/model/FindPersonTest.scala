@@ -24,7 +24,36 @@ class FindPersonTest {
 
     val p = Person.find(2)
     
-    assertEquals(2, p.get.asInstanceOf[Person].id)
+    assertEquals(2, p.id)
+  }
+  
+  @Test(expected = classOf[net.skik.model.RecordNotFound])
+  def testSelectPeopleById_ExceptionWhenIdNotFound: Unit = {
+    insertPerson("Jan", "Jansen")
+    insertPerson("Piet", "Keizer")
+    
+    val ps = Person.find(3)
+  }
+  
+  @Test
+  def testSelectPeopleByIds: Unit = {
+    insertPerson("Jan", "Jansen")
+    insertPerson("Piet", "Keizer")
+    insertPerson("Huub", "Davids")
+    insertPerson("Paul", "Koning")
+    
+    val ps = Person.find(3, 4, 1)
+    
+    assertEquals(3, ps.size)
+    ps.foreach(p => assertTrue(p.id == 1 || p.id == 3 || p.id == 4))
+  }
+  
+  @Test(expected = classOf[net.skik.model.RecordNotFound])
+  def testSelectPeopleByIds_ExceptionWhenIdNotFound: Unit = {
+    insertPerson("Jan", "Jansen")
+    insertPerson("Piet", "Keizer")
+    
+    val ps = Person.find(1, 3)
   }
   
   @Test

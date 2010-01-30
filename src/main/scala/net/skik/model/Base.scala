@@ -2,18 +2,35 @@ package net.skik.model
 
 import java.sql.Connection
 import net.skik.util.LangUtils._
+import org.apache.commons.beanutils._
 
-abstract class Base[T] {
+abstract class Base[T <: Base[T]] {
 
   val tableName: String
   val primaryKey = "id"
   
-  def find(id: Long): Option[T] = {
+  private def getObjectClass: Class[T] = Class.forName(getClass.getName.dropRight(1)).asInstanceOf[Class[T]]
+    
+  def find(id: Long): T = {
     val query = Base.adapter.createQuery(QueryMode.FindFirst).table(tableName)
     query.conditions = Conditions("id = ?", id)
     withDo(Base.adapter.execute(Base.connection, query, ClassMapper(getClass.getName))) { result =>
-      if (result.isEmpty) None else Some(result.first)
+      if (result.isEmpty)
+        throw (new RecordNotFound(tableName + " id " + id))
+      else
+        result.first
     }
+  }
+  
+  def find(ids: Long*): List[T] = {
+    val query = Base.adapter.createQuery(QueryMode.FindAll).table(tableName)
+    query.conditions = Conditions("id in (" + ids.mkString(",") + ")")
+    withDo(Base.adapter.execute(Base.connection, query, ClassMapper(getClass.getName))) { result =>
+      if (result.size != ids.size)
+        throw (new RecordNotFound(tableName + " ids " + ids))
+      else
+        result
+    }    
   }
 
   def find(mode: Symbol, clauses: QueryClause*) = {
@@ -36,13 +53,41 @@ abstract class Base[T] {
   def save: Unit = {
     Base.adapter.save(Base.connection, this, tableName)
   }
+  
+  def newFrom(values: Map[Symbol, Any]): T = {
+    val t = getObjectClass.newInstance.asInstanceOf[T]
+    values.foreach(kv => PropertyUtils.setSimpleProperty(t, kv._1.name, kv._2))
+    t
+  }
+  
+  def newFrom(valueMaps: List[Map[Symbol, Any]]): List[T] = valueMaps.map(newFrom)
+
+  def create(values: Map[Symbol, Any]): T = {
+    val t = newFrom(values)
+    t.save
+    t
+  }
+  
+  def create(valueMaps: List[Map[Symbol, Any]]): List[T] = valueMaps.map(create)
 }
 
 object Base {
 
   var adapter: Adapter = _
   var connection: Connection = _
+
+//  
   
+//  def getObjectClass[T]: Class[T] = null
+//  
+//  def apply[T](values: Map[Symbol, Any]): T = {
+//    getObjectClass[T].newInstance
+//  }
+  
+//  def apply[T](values: Map[Symbol, Any])(implicit baseClass: Manifest[T]): T = {
+//    baseClass.erasure.newInstance.asInstanceOf[T]
+//  }
+
   def establishConnection(adapter: Adapter, host: String, database: String, username: String, password: String): Unit = {
     this.adapter = adapter
     connection = adapter.establishConnection(host, database, username, password)

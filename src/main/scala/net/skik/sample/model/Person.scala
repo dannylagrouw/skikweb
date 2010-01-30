@@ -1,6 +1,7 @@
 package net.skik.sample.model
 
 import net.skik.model.Base
+import net.skik.model.BaseHelper
 import scala.reflect.BeanProperty
 
 class Person extends Base[Person] {
