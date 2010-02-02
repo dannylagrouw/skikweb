@@ -34,6 +34,12 @@ abstract class Base[T <: Base[T]] {
     }    
   }
 
+  def findBySql(sqlQuery: String, args: Map[Symbol, Any]): List[T] =
+    find('all, Sql(sqlQuery, args))
+  
+  def findBySql(sqlQuery: String, args: Any*): List[T] =
+    find('all, Sql(sqlQuery, args:_*))
+  
   def findFirst(clauses: QueryClause*): T = find('first, clauses:_*).first
 
   def findAll(clauses: QueryClause*): List[T] = find('all, clauses:_*)
@@ -48,6 +54,7 @@ abstract class Base[T <: Base[T]] {
         case c: Offset => q.offset = c
 		case c: Select => q.select = c
 		case c: Readonly => q.readonly = c
+		case c: Sql => q.sql = Some(c)
       }}
     }
   }

@@ -18,6 +18,8 @@ abstract class Query(mode: QueryMode.Value) {
   
   var group = Group.empty
   
+  var sql: Option[Sql] = None
+  
   def table(name: String) = {
     tableFields += name -> Array("*")
     this
@@ -28,10 +30,11 @@ abstract class Query(mode: QueryMode.Value) {
     this
   }
 
-  def whereArgs: Array[Any] = if (conditions.hasNamedArgs)
-    Array[Any]()
-  else
-    conditions.args.map(_.value)
+  def whereArgs: Array[Any] = sql match {
+    case Some(s) if (!s.hasNamedArgs) => s.args.map(_.value)
+    case _ if (!conditions.hasNamedArgs) => conditions.args.map(_.value)
+    case _ => Array[Any]()
+  }
 
   def toSql: String
   
@@ -105,6 +108,18 @@ object Conditions {
   def apply(args: Map[Symbol, Any]) = new Conditions(None, args.toArray.map(a => WhereArg(a._1, a._2)))
   def apply(clause: String, args: Map[Symbol, Any]) = new Conditions(Some(clause), args.toArray.map(a => WhereArg(a._1, a._2)))
   def apply(clause: String, args: Any*) = new Conditions(Some(clause), args.toArray.map(WhereArg(_)))
+}
+
+class Sql(val sqlQuery: String, val args: Array[WhereArg]) extends QueryClause {
+  def hasNamedArgs = args.find(_.isNamed).isDefined
+  def toSql = if (hasNamedArgs) replaceArgs else sqlQuery
+  def replaceArgs =
+    (sqlQuery /: args) ((c, a) => c.replaceAll(":" + a.nameStr, a.valueAsSql))
+}
+
+object Sql {
+  def apply(sqlQuery: String, args: Map[Symbol, Any]) = new Sql(sqlQuery, args.toArray.map(a => WhereArg(a._1, a._2)))
+  def apply(sqlQuery: String, args: Any*) = new Sql(sqlQuery, args.toArray.map(WhereArg(_)))
 }
 
 case class WhereArg(val name: Option[Symbol] = None, val value: Any) {
