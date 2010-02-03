@@ -203,10 +203,32 @@ class FindPersonTest {
     insertPerson("Jan", "Keizer")
     insertPerson("Jan", "Davids")
 
-    val ps = Person.findAll(Select("first_name, count(*) as count_first_name"), Conditions("first_name = ? or first_name = ?", "Jan", "Piet"),
-        Group("first_name"), Order("first_name desc"))
+    val ps = Person.findAll(
+        Select("first_name, count(*) as count_first_name"), 
+        Conditions("first_name = ? or first_name = ?", "Jan", "Piet"),
+        Group("first_name"), 
+        Order("first_name desc"))
     
     assertEquals(2, ps.size)
+  }
+
+  @Test
+  def testSelectAllPeople_GroupByName_Having: Unit = {
+    insertPerson("Piet", "Keizer")
+    insertPerson("Piet", "Admiraal")
+    insertPerson("Piet", "Koning")
+    insertPerson("Jan", "Keizer")
+    insertPerson("Jan", "Davids")
+
+    val ps = Person.findAll(
+        Select("first_name, count(*) as count_first_name"), 
+        Group("first_name"), 
+        Having("count(*) > 2"),
+        Order("first_name desc"))
+    
+    assertEquals(1, ps.size)
+    assertEquals("Piet", ps(0).first_name)
+    assertEquals(3, ps(0).count_first_name)
   }
 
   @Test

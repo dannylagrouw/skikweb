@@ -44,25 +44,53 @@ abstract class Base[T <: Base[T]] {
 
   def findAll(clauses: QueryClause*): List[T] = find('all, clauses:_*)
 
-  def find(mode: Symbol, clauses: QueryClause*): List[T] = {
-    execFindQuery(mode) {q: Query =>
+  def count(column: Symbol, clauses: QueryClause*): Number =
+    calculate('count, column, clauses:_*)
+  def count: Long = count()
+  def count(clauses: QueryClause*): Long =
+    find('first, new ValueMapper[Long], Select("count(*)") :: clauses.toList).head
+
+  def average(column: Symbol, clauses: QueryClause*): Number =
+    calculate('avg, column, clauses:_*)
+  def minimum(column: Symbol, clauses: QueryClause*): Number =
+    calculate('min, column, clauses:_*)
+  def maximum(column: Symbol, clauses: QueryClause*): Number =
+    calculate('max, column, clauses:_*)
+  def sum(column: Symbol, clauses: QueryClause*): Number =
+    calculate('sum, column, clauses:_*)
+
+  //TODO should dbfun be property of Query for better handling of distinct?
+  def calculate(function: Symbol, column: Symbol, clauses: QueryClause*): Number =
+    find('first,
+        new ValueMapper[Number],
+        Select(function.name + "(" +
+            (if (clauses.exists(_.isInstanceOf[Distinct])) "distinct " else "") +
+            column.name + ")") :: clauses.toList).head
+        
+  def find(mode: Symbol, clauses: QueryClause*): List[T] =
+    find(mode, ClassMapper[T](getClass.getName), clauses)
+
+  private def find[U](mode: Symbol, mapper: Mapper[U], clauses: Seq[QueryClause]): List[U] = {
+    execFindQuery(mode, mapper) {q: Query =>
       clauses.foreach {clause => clause match {
         case c: Conditions => q.conditions = c
         case c: Order => q.order = c
         case c: Group => q.group = c
+        case c: Having => q.having = c
         case c: Limit => q.limit = c
         case c: Offset => q.offset = c
-		case c: Select => q.select = c
-		case c: Readonly => q.readonly = c
-		case c: Sql => q.sql = Some(c)
+        case c: Select => q.select = c
+        case c: Readonly => q.readonly = c
+        case c: Distinct => q.distinct = c
+        case c: Sql => q.sql = Some(c)
       }}
     }
   }
-
-  def execFindQuery(mode: Symbol)(f: Query => _): List[T] = {
+  
+  def execFindQuery[U](mode: Symbol, mapper: Mapper[U])(f: Query => _): List[U] = {
     val query = Base.adapter.createQuery(QueryMode(mode)).table(tableName)
     f(query)
-    Base.execQuery(query, ClassMapper[T](getClass.getName))
+    Base.execQuery(query, mapper)
   }
   
   def save: Unit = {

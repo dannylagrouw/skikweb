@@ -5,19 +5,14 @@ abstract class Query(mode: QueryMode.Value) {
   var tableFields = Map.empty[String, Array[String]]
 
   var select = Select.empty
-
   var conditions = Conditions.empty
-  
   var order = Order.empty
-  
   var limit = Limit.empty
-  
   var offset = Offset.empty
-  
   var readonly = Readonly(false)
-  
+  var distinct = Distinct(false)
   var group = Group.empty
-  
+  var having = Having.empty
   var sql: Option[Sql] = None
   
   def table(name: String) = {
@@ -68,6 +63,18 @@ object Group {
   def apply(group: String) = new Group(Some(group))
 }
 
+class Having(val clause: Option[String]) extends QueryClause {
+  def toSql = clause match {
+    case Some(h) => " having " + h
+    case _ => ""
+  }
+}
+
+object Having {
+  val empty = new Having(None)
+  def apply(having: String) = new Having(Some(having))
+}
+
 class Select(val clause: Option[String]) extends QueryClause {
   def toSql = clause match {
     case Some(s) => s
@@ -80,12 +87,18 @@ object Select {
   def apply(select: String) = new Select(Some(select))
 }
 
-class Readonly(val readonly: Boolean) extends QueryClause {
+class BooleanQueryClause(val b: Boolean) extends QueryClause {
   def toSql = ""
 }
 
+class Readonly(val readonly: Boolean) extends BooleanQueryClause(readonly)
 object Readonly {
   def apply(readonly: Boolean) = new Readonly(readonly)
+}
+
+class Distinct(val distinct: Boolean) extends BooleanQueryClause(distinct)
+object Distinct {
+  def apply(distinct: Boolean) = new Distinct(distinct)
 }
 
 class Conditions(val clause: Option[String], val args: Array[WhereArg]) extends QueryClause {

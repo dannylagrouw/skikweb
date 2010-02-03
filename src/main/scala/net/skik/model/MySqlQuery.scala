@@ -15,6 +15,7 @@ class MySqlQuery(mode: QueryMode.Value) extends Query(mode) {
         " from " + tableFields.keySet.first +
         conditions.toSql +
         group.toSql +
+        having.toSql +
         order.toSql +
         (if (mode == QueryMode.FindFirst) " limit 1" else limit.toSql) +
         offset.toSql
