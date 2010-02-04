@@ -6,6 +6,7 @@ abstract class Query(mode: QueryMode.Value) {
 
   var select = Select.empty
   var conditions = Conditions.empty
+  var by = By.empty
   var order = Order.empty
   var limit = Limit.empty
   var offset = Offset.empty
@@ -101,7 +102,7 @@ object Distinct {
   def apply(distinct: Boolean) = new Distinct(distinct)
 }
 
-class Conditions(val clause: Option[String], val args: Array[WhereArg]) extends QueryClause {
+case class Conditions(val clause: Option[String], val args: Array[WhereArg]) extends QueryClause {
   def isEmpty = clause.isEmpty && args.isEmpty
   def hasNamedArgs = args.find(_.isNamed).isDefined
   def toSql = clause match {
@@ -121,6 +122,12 @@ object Conditions {
   def apply(args: Map[Symbol, Any]) = new Conditions(None, args.toArray.map(a => WhereArg(a._1, a._2)))
   def apply(clause: String, args: Map[Symbol, Any]) = new Conditions(Some(clause), args.toArray.map(a => WhereArg(a._1, a._2)))
   def apply(clause: String, args: Any*) = new Conditions(Some(clause), args.toArray.map(WhereArg(_)))
+}
+
+case class By(override val args: Array[WhereArg]) extends Conditions(None, args)
+object By {
+  def empty = new By(Array[WhereArg]())
+  def apply(args: (Symbol, Any)*) = new By(args.toArray.map(a => WhereArg(a._1, a._2)))  
 }
 
 class Sql(val sqlQuery: String, val args: Array[WhereArg]) extends QueryClause {

@@ -2,6 +2,12 @@ package net.skik.model
 
 class MySqlQuery(mode: QueryMode.Value) extends Query(mode) {
 
+  private def replaceWhere(s: String) =
+    if (s.take(7) == " where ")
+      " and (" + s.drop(7) + ")"
+    else
+      s
+  
   override def toSql: String = {
     // TODO assuming 1 table for now
     //var i = 0
@@ -13,7 +19,8 @@ class MySqlQuery(mode: QueryMode.Value) extends Query(mode) {
       case _ =>
         "select " + select.toSql +
         " from " + tableFields.keySet.first +
-        conditions.toSql +
+        by.toSql +
+        (if (by.isEmpty) conditions.toSql else replaceWhere(conditions.toSql)) +
         group.toSql +
         having.toSql +
         order.toSql +

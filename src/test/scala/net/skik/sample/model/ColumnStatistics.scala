@@ -102,6 +102,80 @@ class ColumnStatistics {
     assertEquals(math.sqrt(2), c.doubleValue, .0001)
   }
   
+  @Test
+  def testCountGrouped {
+    val cs = Person.countGrouped('nr, Group("first_name"), Order("first_name"))
+
+    assertEquals(2, cs.size)
+    assertEquals("Jan", cs(0)._1)
+    assertEquals(2l, cs(0)._2)
+    assertEquals("Piet", cs(1)._1)
+    assertEquals(3l, cs(1)._2)
+  }
+  
+  @Test
+  def testAverageGrouped {
+    val cs = Person.averageGrouped('nr, Group("first_name"), Order("first_name"))
+
+    assertEquals(2, cs.size)
+    assertEquals("Jan", cs(0)._1)
+    assertEquals(4.5, cs(0)._2.doubleValue, .001)
+    assertEquals("Piet", cs(1)._1)
+    assertEquals(2, cs(1)._2.intValue)
+  }
+  
+  @Test
+  def testMinimumGrouped {
+    val cs = Person.minimumGrouped('nr, Group("first_name"), Order("first_name"))
+
+    assertEquals(2, cs.size)
+    assertEquals("Jan", cs(0)._1)
+    assertEquals(4, cs(0)._2)
+    assertEquals("Piet", cs(1)._1)
+    assertEquals(1, cs(1)._2)
+  }
+  
+  @Test
+  def testMaximumGrouped {
+    val cs = Person.maximumGrouped('nr, Group("first_name"), Order("first_name"))
+
+    assertEquals(2, cs.size)
+    assertEquals("Jan", cs(0)._1)
+    assertEquals(5, cs(0)._2)
+    assertEquals("Piet", cs(1)._1)
+    assertEquals(3, cs(1)._2)
+  }
+  
+  @Test(expected = classOf[RuntimeException])
+  def testMaximumGrouped_ForgotGroup {
+    Person.maximumGrouped('nr, Order("first_name"))
+  }
+  
+  @Test
+  def testMaximumGrouped_Top3 {
+    insertPerson("Dries", "Bakker", 8)
+    insertPerson("Joop", "Boon", 9)
+    insertPerson("Klaas", "Keizer", 10)
+    
+    val cs = Person.maximumGrouped('nr, Group("first_name"), Limit(3), Order("max(nr) desc"))
+
+    assertEquals(3, cs.size)
+    assertEquals(("Klaas", 10), cs(0))
+    assertEquals(("Joop", 9), cs(1))
+    assertEquals(("Dries", 8), cs(2))
+  }
+  
+  @Test
+  def testSumGrouped {
+    val cs = Person.sumGrouped('nr, Group("first_name"), Order("first_name"))
+
+    assertEquals(2, cs.size)
+    assertEquals("Jan", cs(0)._1)
+    assertEquals(9, cs(0)._2.intValue)
+    assertEquals("Piet", cs(1)._1)
+    assertEquals(6, cs(1)._2.intValue)
+  }
+  
   @Test @Ignore
   def testBigDecimal: Unit = {
     assertEquals(BigDecimal(3), new java.math.BigDecimal("3"))

@@ -33,7 +33,7 @@ abstract class Base[T <: Base[T]] {
         result
     }    
   }
-
+  
   def findBySql(sqlQuery: String, args: Map[Symbol, Any]): List[T] =
     find('all, Sql(sqlQuery, args))
   
@@ -49,15 +49,25 @@ abstract class Base[T <: Base[T]] {
   def count: Long = count()
   def count(clauses: QueryClause*): Long =
     find('first, new ValueMapper[Long], Select("count(*)") :: clauses.toList).head
+  def countGrouped(column: Symbol, clauses: QueryClause*): List[(Any, Number)] =
+    calculateGrouped('count, column, clauses:_*)
 
   def average(column: Symbol, clauses: QueryClause*): Number =
     calculate('avg, column, clauses:_*)
+  def averageGrouped(column: Symbol, clauses: QueryClause*): List[(Any, Number)] =
+    calculateGrouped('avg, column, clauses:_*)
   def minimum(column: Symbol, clauses: QueryClause*): Number =
     calculate('min, column, clauses:_*)
+  def minimumGrouped(column: Symbol, clauses: QueryClause*): List[(Any, Number)] =
+    calculateGrouped('min, column, clauses:_*)
   def maximum(column: Symbol, clauses: QueryClause*): Number =
     calculate('max, column, clauses:_*)
+  def maximumGrouped(column: Symbol, clauses: QueryClause*): List[(Any, Number)] =
+    calculateGrouped('max, column, clauses:_*)
   def sum(column: Symbol, clauses: QueryClause*): Number =
     calculate('sum, column, clauses:_*)
+  def sumGrouped(column: Symbol, clauses: QueryClause*): List[(Any, Number)] =
+    calculateGrouped('sum, column, clauses:_*)
 
   //TODO should dbfun be property of Query for better handling of distinct?
   def calculate(function: Symbol, column: Symbol, clauses: QueryClause*): Number =
@@ -66,6 +76,14 @@ abstract class Base[T <: Base[T]] {
         Select(function.name + "(" +
             (if (clauses.exists(_.isInstanceOf[Distinct])) "distinct " else "") +
             column.name + ")") :: clauses.toList).head
+
+  def calculateGrouped(function: Symbol, column: Symbol, clauses: QueryClause*): List[(Any, Number)] =
+    clauses.find(_.isInstanceOf[Group]) match {
+      case Some(group: Group) => find('all,
+        new GroupedValueMapper[(Any, Number)], 
+        Select(group.clause.get + ", " + function.name + "(" + column.name + ")") :: clauses.toList)
+      case _ => error("Group clause required for calculateGrouped")
+  }
         
   def find(mode: Symbol, clauses: QueryClause*): List[T] =
     find(mode, ClassMapper[T](getClass.getName), clauses)
@@ -73,7 +91,8 @@ abstract class Base[T <: Base[T]] {
   private def find[U](mode: Symbol, mapper: Mapper[U], clauses: Seq[QueryClause]): List[U] = {
     execFindQuery(mode, mapper) {q: Query =>
       clauses.foreach {clause => clause match {
-        case c: Conditions => q.conditions = c
+        case c: By => println("MATCH by = " + c); q.by = c
+        case c: Conditions => println("MATCH conditions = " + c); q.conditions = c
         case c: Order => q.order = c
         case c: Group => q.group = c
         case c: Having => q.having = c

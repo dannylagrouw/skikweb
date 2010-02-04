@@ -11,6 +11,7 @@ class Person extends Base[Person] {
   @BeanProperty var id: Long = _
   @BeanProperty var first_name: String = _
   @BeanProperty var last_name: String = _
+  @BeanProperty var nr: Long = _
   
   @BeanProperty var count_first_name: Long = 0
   
