@@ -54,7 +54,7 @@ abstract class Adapter {
     result.reverse
   }
   
-  def save[T](conn: Connection, modelObject: T, tableName: String): Unit = {
+  def saveNew[T](conn: Connection, modelObject: T, tableName: String): Unit = {
     // TODO cache this
     // TODO get schema name from config
     // TODO wrap jdbc
@@ -62,25 +62,72 @@ abstract class Adapter {
     // TODO abstract query, fields
     // TODO handle custom primary key / generated key
     println("SAVE get column info for " + tableName)
-    var columns = Map.empty[String, Any]
-    val dbmd = conn.getMetaData
-    val colsRS = dbmd.getColumns(null, "inschr_rer", tableName, null);
-    while (colsRS.next) {
-      val columnName = colsRS.getString("COLUMN_NAME")
-      if (PropertyUtils.isReadable(modelObject, columnName)) {
-        columns += (columnName -> PropertyUtils.getSimpleProperty(modelObject, columnName));
-      }
-    }
+    val (id, columns) = getColumnValues(conn, modelObject, tableName)
     val query = "insert into " + tableName + " (" + columns.map(kv => kv._1).mkString(", ") +
-        ") values (" + columns.map(kv => "'" + kv._2 + "'").mkString(", ") + ")"
+        ") values (" + columns.map(kv => asSqlValue(kv._2)).mkString(", ") + ")"
     println("QUERY = " + query)
     val stmt = conn.createStatement
     stmt.execute(query);
     
     val keyRS = stmt.getGeneratedKeys
     if (keyRS.next) {
-      PropertyUtils.setSimpleProperty(modelObject, "id", keyRS.getLong(1))
+      PropertyUtils.setSimpleProperty(modelObject, "id", keyRS.getInt(1))
     }
   }
     
+  def saveExisting[T](conn: Connection, modelObject: T, tableName: String): Unit = {
+    // TODO cache this
+    // TODO get schema name from config
+    // TODO wrap jdbc
+    // TODO error handling
+    // TODO abstract query, fields
+    // TODO handle custom primary key / generated key
+    println("UPDATE get column info for " + tableName)
+    val (id, columns) = getColumnValues(conn, modelObject, tableName)
+    update(conn, tableName, id, columns.toArray:_*)
+  }
+
+  def getColumnValues[T](conn: Connection, modelObject: T, tableName: String): (Int, Map[String, Any]) = {
+    // TODO let T be T <: (def getKey: Any)???
+    var columns = Map.empty[String, Any]
+    val dbmd = conn.getMetaData
+    val colsRS = dbmd.getColumns(null, "inschr_rer", tableName, null)
+    var id: Int = 0
+    while (colsRS.next) {
+      val columnName = colsRS.getString("COLUMN_NAME")
+      if (PropertyUtils.isReadable(modelObject, columnName)) {
+        if (columnName == "id")
+          id = PropertyUtils.getSimpleProperty(modelObject, columnName).asInstanceOf[Int]
+        else
+          columns += (columnName -> PropertyUtils.getSimpleProperty(modelObject, columnName))
+      }
+    }
+    (id, columns)
+  }
+  
+  def update(conn: Connection, tableName: String, id: Int, args: (String, Any)*): Boolean = {
+    val query = "update " + tableName + " set " + 
+        args.map(kv => kv._1 + " = " + asSqlValue(kv._2)).mkString(", ") +
+        " where id = " + id
+    println("QUERY = " + query)
+    val stmt = conn.createStatement
+    stmt.executeUpdate(query)
+    // TODO false if error?
+    true
+  }
+  
+  def asSqlValue(value: Any) = value match {
+    case None => "null"
+    case null => "null"
+    case Some(v: Number) => v.toString
+    case v: Number => v.toString
+    case _ => "'" + value + "'"
+  }
+    
+  def updateAll(conn: Connection, tableName: String, fields: String, where: String) = {
+    val query = "update " + tableName + " set " + fields + " where " + where
+    println("QUERY = " + query)
+    val stmt = conn.createStatement
+    stmt.executeUpdate(query)
+  }
 }

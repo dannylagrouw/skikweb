@@ -9,6 +9,9 @@ abstract class Base[T <: Base[T]] {
   val tableName: String
   val primaryKey = "id"
   var readonly = false
+
+  private def thisId = PropertyUtils.getSimpleProperty(this, "id").asInstanceOf[Int]
+  private def isNew = thisId == 0
   
   private def getObjectClass: Class[T] = Class.forName(getClass.getName.dropRight(1)).asInstanceOf[Class[T]]
     
@@ -40,7 +43,10 @@ abstract class Base[T <: Base[T]] {
   def findBySql(sqlQuery: String, args: Any*): List[T] =
     find('all, Sql(sqlQuery, args:_*))
   
-  def findFirst(clauses: QueryClause*): T = find('first, clauses:_*).first
+  def findFirst(clauses: QueryClause*): Option[T] = find('first, clauses:_*) match {
+    case x :: xs => Some(x)
+    case _ => None
+  }
 
   def findAll(clauses: QueryClause*): List[T] = find('all, clauses:_*)
 
@@ -84,7 +90,17 @@ abstract class Base[T <: Base[T]] {
         Select(group.clause.get + ", " + function.name + "(" + column.name + ")") :: clauses.toList)
       case _ => error("Group clause required for calculateGrouped")
   }
-        
+
+  def findOrInitialize(by: By): T = findFirst(by) match {
+    case Some(t) => t
+    case None => newFrom(Map(by.args.map(_.toTuple):_*))
+  }
+  
+  def findOrCreate(by: By): T = findFirst(by) match {
+    case Some(t) => t
+    case None => create(Map(by.args.map(_.toTuple):_*))
+  }
+  
   def find(mode: Symbol, clauses: QueryClause*): List[T] =
     find(mode, ClassMapper[T](getClass.getName), clauses)
 
@@ -106,15 +122,21 @@ abstract class Base[T <: Base[T]] {
     }
   }
   
+  def reload: T = {
+    find('first, By('id -> thisId)).head
+  }
+
   def execFindQuery[U](mode: Symbol, mapper: Mapper[U])(f: Query => _): List[U] = {
     val query = Base.adapter.createQuery(QueryMode(mode)).table(tableName)
     f(query)
     Base.execQuery(query, mapper)
   }
   
-  def save: Unit = {
-    Base.adapter.save(Base.connection, this, tableName)
-  }
+  def save: Unit =
+    if (isNew)
+      Base.adapter.saveNew(Base.connection, this, tableName)
+    else
+      Base.adapter.saveExisting(Base.connection, this, tableName)
   
   def newFrom(values: Map[Symbol, Any]): T = {
     val t = getObjectClass.newInstance.asInstanceOf[T]
@@ -131,7 +153,21 @@ abstract class Base[T <: Base[T]] {
   }
   
   def create(valueMaps: List[Map[Symbol, Any]]): List[T] = valueMaps.map(create)
+  
+  def updateAttribute(column: Symbol, value: Any): Boolean =
+    updateAttributes(column -> value)
+  def updateAttributes(args: (Symbol, Any)*): Boolean =
+    updateAttributes(thisId, args:_*)
+  private def updateAttributes(id: Int, args: (Symbol, Any)*): Boolean =
+    Base.adapter.update(Base.connection, tableName, id, args.map(kv => (kv._1.name, kv._2)):_*)
+  def update(id: Int, args: (Symbol, Any)*): T = {
+    updateAttributes(id, args:_*)
+    find(id)
+  }
+  def updateAll(fields: String, where: String) =
+    Base.adapter.updateAll(Base.connection, tableName, fields, where)
 }
+  
 
 object Base {
 

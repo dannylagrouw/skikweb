@@ -15,7 +15,14 @@ class ClassMapper[T <: Base[T]](modelClass: Class[T]) extends Mapper[T] {
     for (i <- 1 to metaData.getColumnCount) {
       val columnName = metaData.getColumnName(i)
       if (PropertyUtils.isWriteable(o, columnName)) {
-        PropertyUtils.setSimpleProperty(o, columnName, rs.getObject(i));
+        val columnValue = rs.getObject(i)
+        // TODO cache propertyTypes somewhere:
+        val propertyType = PropertyUtils.getPropertyType(o, columnName).getName
+        val fieldValue = propertyType match {
+          case "scala.Option" => if (columnValue == null) None else Some(columnValue)
+          case _ => columnValue
+        }
+        PropertyUtils.setSimpleProperty(o, columnName, fieldValue);
       }
     }
     o

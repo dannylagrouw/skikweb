@@ -159,6 +159,8 @@ case class WhereArg(val name: Option[Symbol] = None, val value: Any) {
     case v: String => "'" + v + "'"
     case _ => value.toString
   }
+  
+  def toTuple = (name.get, value)
 }
 
 object WhereArg {

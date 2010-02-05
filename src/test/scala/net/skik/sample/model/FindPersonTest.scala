@@ -179,9 +179,10 @@ class FindPersonTest {
 
     val p = Person.findFirst(Select("id, first_name"), Conditions("id = 2"))
     
-    assertEquals(2, p.id)
-	assertEquals("Piet", p.first_name)
-	assertEquals(null, p.last_name)
+    assertTrue(p.isDefined)
+    assertEquals(2, p.get.id)
+	assertEquals("Piet", p.get.first_name)
+	assertEquals(null, p.get.last_name)
   }
 
   @Test
@@ -236,7 +237,9 @@ class FindPersonTest {
     insertPerson("Piet", "Koning")
     insertPerson("Jan", "Keizer")
 
-    val p: Person = Person.findFirst()
+    val p: Option[Person] = Person.findFirst()
+    
+    assertTrue(p.isDefined)
   }
 
   @Test
@@ -244,9 +247,9 @@ class FindPersonTest {
     insertPerson("Piet", "Koning")
     insertPerson("Jan", "Keizer")
 
-    val p: Person = Person.findFirst(Order("id desc"))
+    val p: Option[Person] = Person.findFirst(Order("id desc"))
     
-    assertEquals(2, p.id)
+    assertEquals(2, p.get.id)
   }
   
   // findBy('first_name -> "Jan", 'last_name -> "Jansen")

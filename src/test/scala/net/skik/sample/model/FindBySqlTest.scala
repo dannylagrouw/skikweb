@@ -59,12 +59,12 @@ class FindBySqlTest {
     insertPerson("Piet", "Koning")
     insertPerson("Jan", "Keizer")
     insertPerson("Jan", "Davids")
-    val ps = Person.findBySql("select first_name, count(*) as id from people group by first_name order by 2 desc")
+    val ps = Person.findBySql("select first_name, count(*) as count_first_name from people group by first_name order by 2 desc")
     
     assertEquals(2, ps.size)
-    assertEquals(3, ps(0).id)
+    assertEquals(3, ps(0).count_first_name)
     assertEquals("Piet", ps(0).first_name)
-    assertEquals(2, ps(1).id)
+    assertEquals(2, ps(1).count_first_name)
     assertEquals("Jan", ps(1).first_name)
   }
   
