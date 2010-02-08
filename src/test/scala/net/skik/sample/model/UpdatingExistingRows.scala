@@ -29,7 +29,7 @@ class UpdatingExistingRows extends AbstractModelTest {
   }
 
   @Test
-  def testUpdateAfterFindBySql {
+  def testUpdateAfterFindBySql_KNOWN_ISSUE {
     val p = Person.findBySql("select id, first_name, last_name from people where id = 3").head
     p.first_name = "Wilma"
     
@@ -68,7 +68,7 @@ class UpdatingExistingRows extends AbstractModelTest {
     assertEquals("barney@bedrock.com", p2.email)
   }
   
-  @Test(expected = classOf[java.sql.SQLException])
+  @Test
   def testUpdateAttributes_Error {
     val p = Person.find(4)
     

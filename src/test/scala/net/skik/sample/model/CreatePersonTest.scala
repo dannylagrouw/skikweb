@@ -70,9 +70,13 @@ class CreatePersonTest {
     // Rails: p = Person.create(:first_name = "a", ...)
     val p = Person.create(Map('first_name -> "Piet", 'last_name -> "Davids"))
     
-    assertNotSame(0, p.id)
-    assertEquals("Piet", p.first_name)
-    assertEquals("Davids", p.last_name)
+    p match {
+      case None => fail("Did not create Person")
+      case Some(p) =>
+        assertNotSame(0, p.id)
+        assertEquals("Piet", p.first_name)
+        assertEquals("Davids", p.last_name)
+    }
   }
 
   @Test

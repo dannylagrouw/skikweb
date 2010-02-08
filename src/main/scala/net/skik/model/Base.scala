@@ -98,7 +98,7 @@ abstract class Base[T <: Base[T]] {
   
   def findOrCreate(by: By): T = findFirst(by) match {
     case Some(t) => t
-    case None => create(Map(by.args.map(_.toTuple):_*))
+    case None => create_!(Map(by.args.map(_.toTuple):_*))
   }
   
   def find(mode: Symbol, clauses: QueryClause*): List[T] =
@@ -132,11 +132,15 @@ abstract class Base[T <: Base[T]] {
     Base.execQuery(query, mapper)
   }
   
-  def save: Unit =
+  def save_! = {
     if (isNew)
       Base.adapter.saveNew(Base.connection, this, tableName)
     else
       Base.adapter.saveExisting(Base.connection, this, tableName)
+    true
+  }
+  
+  def save: Boolean = catchToBoolean(save_!)
   
   def newFrom(values: Map[Symbol, Any]): T = {
     val t = getObjectClass.newInstance.asInstanceOf[T]
@@ -146,20 +150,29 @@ abstract class Base[T <: Base[T]] {
   
   def newFrom(valueMaps: List[Map[Symbol, Any]]): List[T] = valueMaps.map(newFrom)
 
-  def create(values: Map[Symbol, Any]): T = {
+  def create_!(values: Map[Symbol, Any]): T = {
     val t = newFrom(values)
-    t.save
+    t.save_!
     t
   }
   
-  def create(valueMaps: List[Map[Symbol, Any]]): List[T] = valueMaps.map(create)
+  def create(values: Map[Symbol, Any]): Option[T] = {
+    val t = newFrom(values)
+    if (t.save)
+      Some(t)
+    else
+      None
+  }
+  
+  def create(valueMaps: List[Map[Symbol, Any]]): List[T] = valueMaps.map(create_!)
   
   def updateAttribute(column: Symbol, value: Any): Boolean =
     updateAttributes(column -> value)
   def updateAttributes(args: (Symbol, Any)*): Boolean =
     updateAttributes(thisId, args:_*)
-  private def updateAttributes(id: Int, args: (Symbol, Any)*): Boolean =
+  private def updateAttributes(id: Int, args: (Symbol, Any)*): Boolean = catchToBoolean {
     Base.adapter.update(Base.connection, tableName, id, args.map(kv => (kv._1.name, kv._2)):_*)
+  }
   def update(id: Int, args: (Symbol, Any)*): T = {
     updateAttributes(id, args:_*)
     find(id)

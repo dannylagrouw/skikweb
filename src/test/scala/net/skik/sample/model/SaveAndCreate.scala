@@ -26,4 +26,27 @@ class SaveAndCreate extends AbstractModelTest {
     assertFalse(b)
   }
 
+  @Test
+  def testCreateBoolean {
+    val p = Person.create(Map('id -> 2))
+    
+    assertNotNull(p)
+  }
+
+  @Test(expected = classOf[java.sql.SQLException])
+  def testSave_! {
+    val p = Person.newFrom(Map('id -> 2))
+      
+    val b = p.save_!
+    
+    assertFalse(b)
+  }
+
+  @Test(expected = classOf[java.sql.SQLException])
+  def testCreate_! {
+    val p = Person.create_!(Map('id -> 2))
+    
+    assertNotNull(p)
+  }
+
 }

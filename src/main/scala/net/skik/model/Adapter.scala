@@ -2,6 +2,7 @@ package net.skik.model
 
 import java.sql.Connection
 import org.apache.commons.beanutils._
+import net.skik.util.LangUtils._
 
 abstract class Adapter {
 
@@ -9,13 +10,6 @@ abstract class Adapter {
 
   def createQuery(mode: QueryMode.Value): Query
  
-  def using[Closeable <: {def close(): Unit}, B](closeable: Closeable)(f: Closeable => B): B =
-    try {
-      f(closeable)
-    } finally {
-      closeable.close()
-    }
-  
   def execute(conn: Connection, query: Query): Int = {
     val stmt = conn.prepareStatement(query.toSql)
     var result = List.empty[Any]
@@ -86,7 +80,7 @@ abstract class Adapter {
     val (id, columns) = getColumnValues(conn, modelObject, tableName)
     update(conn, tableName, id, columns.toArray:_*)
   }
-
+  
   def getColumnValues[T](conn: Connection, modelObject: T, tableName: String): (Int, Map[String, Any]) = {
     // TODO let T be T <: (def getKey: Any)???
     var columns = Map.empty[String, Any]
@@ -105,15 +99,13 @@ abstract class Adapter {
     (id, columns)
   }
   
-  def update(conn: Connection, tableName: String, id: Int, args: (String, Any)*): Boolean = {
+  def update(conn: Connection, tableName: String, id: Int, args: (String, Any)*): Unit = {
     val query = "update " + tableName + " set " + 
         args.map(kv => kv._1 + " = " + asSqlValue(kv._2)).mkString(", ") +
         " where id = " + id
     println("QUERY = " + query)
     val stmt = conn.createStatement
     stmt.executeUpdate(query)
-    // TODO false if error?
-    true
   }
   
   def asSqlValue(value: Any) = value match {
