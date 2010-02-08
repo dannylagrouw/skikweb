@@ -122,4 +122,23 @@ abstract class Adapter {
     val stmt = conn.createStatement
     stmt.executeUpdate(query)
   }
+  
+  def delete(conn: Connection, tableName: String, id: Int) = {
+    val query = "delete from " + tableName + " where id = ?"
+    println("QUERY = " + query)
+    val stmt = conn.prepareStatement(query)
+    using(stmt) { stmt =>
+      stmt.setInt(1, id)
+      stmt.executeUpdate
+    }
+  }
+  
+  def delete(conn: Connection, tableName: String, ids: List[Int]) = {
+    val query = "delete from " + tableName + " where id in (" + ids.mkString(",") + ")"
+    println("QUERY = " + query)
+    val stmt = conn.prepareStatement(query)
+    using(stmt) (_.executeUpdate)
+  }
+  
 }
+

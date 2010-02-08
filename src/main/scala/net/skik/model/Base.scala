@@ -9,9 +9,11 @@ abstract class Base[T <: Base[T]] {
   val tableName: String
   val primaryKey = "id"
   var readonly = false
+  var frozen = false
 
   private def thisId = PropertyUtils.getSimpleProperty(this, "id").asInstanceOf[Int]
   private def isNew = thisId == 0
+  private def freeze = (frozen = true)
   
   private def getObjectClass: Class[T] = Class.forName(getClass.getName.dropRight(1)).asInstanceOf[Class[T]]
     
@@ -179,6 +181,23 @@ abstract class Base[T <: Base[T]] {
   }
   def updateAll(fields: String, where: String) =
     Base.adapter.updateAll(Base.connection, tableName, fields, where)
+
+  def delete(id: Int) = {
+    Base.adapter.delete(Base.connection, tableName, id)
+  }
+  def delete(ids: List[Int]) = {
+    Base.adapter.delete(Base.connection, tableName, ids)
+  }
+  
+  def destroy: Unit = {
+    Base.adapter.delete(Base.connection, tableName, thisId)
+    freeze
+  }
+
+  //static
+  def destroyAll(conditions: Conditions): Unit =
+    findAll(conditions).foreach(_.destroy)
+  
 }
   
 
