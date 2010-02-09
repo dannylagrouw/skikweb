@@ -124,25 +124,11 @@ abstract class Base[T <: Base[T]] {
     }
   }
   
-  def reload: T = {
-    find('first, By('id -> thisId)).head
-  }
-
   def execFindQuery[U](mode: Symbol, mapper: Mapper[U])(f: Query => _): List[U] = {
     val query = Base.adapter.createQuery(QueryMode(mode)).table(tableName)
     f(query)
     Base.execQuery(query, mapper)
   }
-  
-  def save_! = {
-    if (isNew)
-      Base.adapter.saveNew(Base.connection, this, tableName)
-    else
-      Base.adapter.saveExisting(Base.connection, this, tableName)
-    true
-  }
-  
-  def save: Boolean = catchToBoolean(save_!)
   
   def newFrom(values: Map[Symbol, Any]): T = {
     val t = getObjectClass.newInstance.asInstanceOf[T]
@@ -168,13 +154,6 @@ abstract class Base[T <: Base[T]] {
   
   def create(valueMaps: List[Map[Symbol, Any]]): List[T] = valueMaps.map(create_!)
   
-  def updateAttribute(column: Symbol, value: Any): Boolean =
-    updateAttributes(column -> value)
-  def updateAttributes(args: (Symbol, Any)*): Boolean =
-    updateAttributes(thisId, args:_*)
-  private def updateAttributes(id: Int, args: (Symbol, Any)*): Boolean = catchToBoolean {
-    Base.adapter.update(Base.connection, tableName, id, args.map(kv => (kv._1.name, kv._2)):_*)
-  }
   def update(id: Int, args: (Symbol, Any)*): T = {
     updateAttributes(id, args:_*)
     find(id)
@@ -189,17 +168,38 @@ abstract class Base[T <: Base[T]] {
     Base.adapter.delete(Base.connection, tableName, ids)
   }
   
+  def destroyAll(conditions: Conditions): Unit =
+    findAll(conditions).foreach(_.destroy)
+
+  // niet static
+  def reload: T = {
+    find('first, By('id -> thisId)).head
+  }
+
+  def save_! = {
+    if (isNew)
+      Base.adapter.saveNew(Base.connection, this, tableName)
+    else
+      Base.adapter.saveExisting(Base.connection, this, tableName)
+    true
+  }
+  
+  def save: Boolean = catchToBoolean(save_!)
+  
+  def updateAttribute(column: Symbol, value: Any): Boolean =
+    updateAttributes(column -> value)
+  def updateAttributes(args: (Symbol, Any)*): Boolean =
+    updateAttributes(thisId, args:_*)
+  private def updateAttributes(id: Int, args: (Symbol, Any)*): Boolean = catchToBoolean {
+    Base.adapter.update(Base.connection, tableName, id, args.map(kv => (kv._1.name, kv._2)):_*)
+  }
+
   def destroy: Unit = {
     Base.adapter.delete(Base.connection, tableName, thisId)
     freeze
   }
 
-  //static
-  def destroyAll(conditions: Conditions): Unit =
-    findAll(conditions).foreach(_.destroy)
-  
 }
-  
 
 object Base {
 
