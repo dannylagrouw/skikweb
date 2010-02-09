@@ -1,4 +1,4 @@
-package net.skik.sample.model
+package net.skik.model
 
 import org.junit.Before
 import org.junit.Test
@@ -6,16 +6,9 @@ import org.junit.Assert._
 import net.skik.model._
 import net.skik.sample.model._
 
-class CreatePersonTest {
+class CreatingNewRows extends AbstractModelTest {
 
-  var lastId = 1
-  
-  @Before
-  def setUp: Unit = {
-    Base.establishConnection(MySqlAdapter, host = "localhost", database = "inschr_rer", username = "root", password = "")
-    //Base.execQuery(new SqlQuery("truncate table people"))
-    //lastId = 1
-  }
+  override def insertFixture {}
   
   @Test
   def testPersonNewSave: Unit = {
