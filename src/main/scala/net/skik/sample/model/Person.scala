@@ -1,13 +1,11 @@
 package net.skik.sample.model
 
 import net.skik.model.Base
-import net.skik.model.BaseHelper
+import net.skik.model.BaseObject
 import scala.reflect.BeanProperty
 
 class Person extends Base[Person] {
 
-  override val tableName = "people"
-    
   @BeanProperty var id: Int = _
   @BeanProperty var first_name: String = _
   @BeanProperty var last_name: String = _
@@ -24,5 +22,6 @@ class Person extends Base[Person] {
   }
 }
 
-object Person extends Person {
+object Person extends BaseObject[Person] {
+  override val tableName = "people"
 }

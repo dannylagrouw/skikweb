@@ -2,31 +2,16 @@ package net.skik.model
 
 import java.sql.Connection
 import net.skik.util.LangUtils._
-import org.apache.commons.beanutils._
+import net.skik.util.ReflectionUtils._
 
-abstract class Base[T <: Base[T]] {
+abstract class BaseObject[T <: Base[T]](implicit modelType: Manifest[T]) {
 
+  //TODO infer tablename from class name
   val tableName: String
   val primaryKey = "id"
-  var readonly = false
-  var frozen = false
+  private val modelClass = modelType.erasure.asInstanceOf[Class[T]]
 
-  private def thisId = PropertyUtils.getSimpleProperty(this, "id").asInstanceOf[Int]
-  private def isNew = thisId == 0
-  private def freeze = (frozen = true)
-  
-  private def getObjectClass: Class[T] = Class.forName(getClass.getName.dropRight(1)).asInstanceOf[Class[T]]
-    
-  def find(id: Long): T = {
-    val query = Base.adapter.createQuery(QueryMode.FindFirst).table(tableName)
-    query.conditions = Conditions("id = ?", id)
-    withDo(Base.adapter.execute(Base.connection, query, ClassMapper(getClass.getName))) { result =>
-      if (result.isEmpty)
-        throw (new RecordNotFound(tableName + " id " + id))
-      else
-        result.first
-    }
-  }
+  def find(id: Long): T = Base.find(id, tableName, modelClass)
   
   def find(ids: Long*): List[T] = {
     val query = Base.adapter.createQuery(QueryMode.FindAll).table(tableName)
@@ -131,8 +116,8 @@ abstract class Base[T <: Base[T]] {
   }
   
   def newFrom(values: Map[Symbol, Any]): T = {
-    val t = getObjectClass.newInstance.asInstanceOf[T]
-    values.foreach(kv => PropertyUtils.setSimpleProperty(t, kv._1.name, kv._2))
+    val t = modelClass.newInstance
+    values.foreach(kv => setProperty(t, kv._1.name, kv._2.asInstanceOf[Object]))
     t
   }
   
@@ -155,8 +140,8 @@ abstract class Base[T <: Base[T]] {
   def create(valueMaps: List[Map[Symbol, Any]]): List[T] = valueMaps.map(create_!)
   
   def update(id: Int, args: (Symbol, Any)*): T = {
-    updateAttributes(id, args:_*)
-    find(id)
+    Base.updateAttributes(id, tableName, args:_*)
+    Base.find(id, tableName, getClass.asInstanceOf[Class[T]])
   }
   def updateAll(fields: String, where: String) =
     Base.adapter.updateAll(Base.connection, tableName, fields, where)
@@ -171,9 +156,22 @@ abstract class Base[T <: Base[T]] {
   def destroyAll(conditions: Conditions): Unit =
     findAll(conditions).foreach(_.destroy)
 
-  // niet static
+}
+
+abstract class Base[T <: Base[T]](implicit modelType: Manifest[T]) {
+  
+  val tableName: String = objectProperty(modelClass, "tableName")
+  val primaryKey: String = objectProperty(modelClass, "primaryKey")
+  var readonly = false
+  var frozen = false
+
+  private def modelClass = modelType.erasure.asInstanceOf[Class[T]]
+  private def thisId: Int = property(this, primaryKey)
+  private def isNew = thisId == 0
+  private def freeze = (frozen = true)
+
   def reload: T = {
-    find('first, By('id -> thisId)).head
+    Base.find(thisId, tableName, modelClass)
   }
 
   def save_! = {
@@ -189,10 +187,7 @@ abstract class Base[T <: Base[T]] {
   def updateAttribute(column: Symbol, value: Any): Boolean =
     updateAttributes(column -> value)
   def updateAttributes(args: (Symbol, Any)*): Boolean =
-    updateAttributes(thisId, args:_*)
-  private def updateAttributes(id: Int, args: (Symbol, Any)*): Boolean = catchToBoolean {
-    Base.adapter.update(Base.connection, tableName, id, args.map(kv => (kv._1.name, kv._2)):_*)
-  }
+    Base.updateAttributes(thisId, tableName, args:_*)
 
   def destroy: Unit = {
     Base.adapter.delete(Base.connection, tableName, thisId)
@@ -231,4 +226,20 @@ object Base {
     adapter.execute(connection, query)
   }
 
+  def find[T](id: Long, tableName: String, modelClass: Class[T]): T = {
+    println("BASE " + modelClass.getName)
+    val query = Base.adapter.createQuery(QueryMode.FindFirst).table(tableName)
+    query.conditions = Conditions("id = ?", id)
+    withDo(Base.adapter.execute(Base.connection, query, ClassMapper(modelClass.getName))) { result =>
+      if (result.isEmpty)
+        throw (new RecordNotFound(tableName + " id " + id))
+      else
+        result.first
+    }
+  }
+  
+  def updateAttributes(id: Int, tableName: String, args: (Symbol, Any)*): Boolean = catchToBoolean {
+    Base.adapter.update(Base.connection, tableName, id, args.map(kv => (kv._1.name, kv._2)):_*)
+  }
+  
 }

@@ -41,6 +41,7 @@ object AbstractModelTest {
       , nr int
       , opt_in tinyint(1)
       , opt_in_on date
+      , email varchar(80)
       , primary key(id)
       )"""))
   }
