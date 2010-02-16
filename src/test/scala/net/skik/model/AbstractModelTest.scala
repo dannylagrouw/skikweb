@@ -37,6 +37,7 @@ object AbstractModelTest {
     Base.execQuery(new SqlQuery("""create table people
       ( id int auto_increment
       , first_name varchar(50)
+      , middle_name varchar(40)
       , last_name varchar(80) not null
       , nr int
       , opt_in tinyint(1)

@@ -4,13 +4,25 @@ import java.sql.Connection
 import net.skik.util.LangUtils._
 import net.skik.util.ReflectionUtils._
 
+case class Composition[A](val property: Symbol, val compositionClass: Class[A]) {
+  def composes(propertyName: String) = hasProperty(compositionClass, propertyName)
+}
+
 abstract class BaseObject[T <: Base[T]](implicit modelType: Manifest[T]) {
 
   //TODO infer tablename from class name
   val tableName: String
   val primaryKey = "id"
+  var compositions = List.empty[Composition[_]]
   private val modelClass = modelType.erasure.asInstanceOf[Class[T]]
 
+  def composedOf(attr: Symbol, compositionClass: Class[_]) {
+    compositions ::= Composition(attr, compositionClass)
+  }
+  
+  def findCompositionFor[A](propertyName: String): Option[Composition[A]] =
+    compositions.find(_.composes(propertyName)).asInstanceOf[Option[Composition[A]]]
+  
   def find(id: Long): T = Base.find(id, tableName, modelClass)
   
   def find(ids: Long*): List[T] = {

@@ -22,4 +22,6 @@ object LangUtils {
     }
   }
 
+  def nullOr(o: AnyRef, defaultValue: AnyRef) = if (o == null) defaultValue else o
+  
 }

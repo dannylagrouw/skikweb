@@ -15,6 +15,7 @@ class Dummy {
   var b: Boolean = true
   var date: Date = new Date
   var bigdecimal = new java.math.BigDecimal("9" * 99)
+  val readonly = true
 }
 
 object Dummy {
@@ -53,6 +54,36 @@ class ReflectionUtilsTest {
   @Test
   def testObjectProperty {
     assertEquals(Dummy.op, objectProperty(classOf[Dummy], "op"))
+  }
+  
+  @Test
+  def testHasProperty {
+    assertTrue(hasProperty(classOf[Dummy], "date"))
+  }
+  
+  @Test
+  def testHasProperty_Readonly {
+    assertFalse(hasProperty(classOf[Dummy], "readonly"))
+  }
+  
+  @Test
+  def testHasWriteProperty {
+    assertTrue(hasWriteProperty(classOf[Dummy], "date"))
+  }
+  
+  @Test
+  def testHasWriteProperty_Readonly {
+    assertFalse(hasWriteProperty(classOf[Dummy], "readonly"))
+  }
+  
+  @Test
+  def testHasReadProperty {
+    assertTrue(hasReadProperty(classOf[Dummy], "date"))
+  }
+  
+  @Test
+  def testHasReadProperty_Readonly {
+    assertTrue(hasReadProperty(classOf[Dummy], "readonly"))
   }
   
   @Test

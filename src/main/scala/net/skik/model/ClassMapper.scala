@@ -2,9 +2,11 @@ package net.skik.model
 
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
-import org.apache.commons.beanutils._
 import net.skik.util.LangUtils._
+import net.skik.util.ReflectionUtils._
 
+//TODO use reflectionutils for baseClass()
+//TODO cache metadata
 class ClassMapper[T <: Base[T]](modelClass: Class[T]) extends Mapper[T] {
 
   //var metaData: ResultSetMetaData = _
@@ -14,18 +16,33 @@ class ClassMapper[T <: Base[T]](modelClass: Class[T]) extends Mapper[T] {
     if (readonly) o.readonly = true
     for (i <- 1 to metaData.getColumnCount) {
       val columnName = metaData.getColumnName(i)
-      if (PropertyUtils.isWriteable(o, columnName)) {
-        val columnValue = rs.getObject(i)
-        // TODO cache propertyTypes somewhere:
-        val propertyType = PropertyUtils.getPropertyType(o, columnName).getName
-        val fieldValue = propertyType match {
-          case "scala.Option" => if (columnValue == null) None else Some(columnValue)
-          case _ => columnValue
+      if (hasWriteProperty(o.getClass, columnName)) {
+        println("MAP iswriteable " + columnName)
+        mapProperty(o, columnName, rs.getObject(i))
+      } else {
+        baseObject[T, BaseObject[T]](modelClass).findCompositionFor(columnName) match {
+          case Some(composition) =>
+            println("MAP composition " + composition)
+            val compositionObject = nullOr(property(o, composition.property.name), composition.compositionClass.newInstance)
+            //TODO check field mapping in composition
+            mapProperty(compositionObject, columnName, rs.getObject(i))
+            setProperty(o, composition.property.name, compositionObject)
+          case None =>
+            println("MAP no composition for " + columnName)
         }
-        PropertyUtils.setSimpleProperty(o, columnName, fieldValue);
       }
     }
     o
+  }
+  
+  def mapProperty(modelObject: Object, propertyName: String, columnValue: Object) {
+    // TODO cache propertyTypes somewhere:
+    val propType = propertyType(modelObject, propertyName).get.getName //TODO catch None
+    val propertyValue = propType match {
+      case "scala.Option" => if (columnValue == null) None else Some(columnValue)
+      case _ => columnValue
+    }
+    setProperty(modelObject, propertyName, propertyValue)
   }
   
 }
