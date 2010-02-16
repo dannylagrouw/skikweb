@@ -1,0 +1,21 @@
+h1. Skik - A Scala Web Framework
+
+Skik is a project to port Ruby on Rails (v2) to Scala. At the moment, it is still in its very early stages. Work is being done mostly on ActiveRecord for now, using the _Agile Web Development with Rails_ book (2nd edition) as a measure for completeness.
+
+As Scala is a different language from Ruby, don't expect constructs to look exactly the same. Instead, the aim is to...
+* Keep the api/syntax as simple as the original one;
+* Use idiomatic Scala, don't try to "Rubyfy" Scala;
+* Make possible a purely textual conversion from Rails syntax to Skik.
+
+h3. Examples
+
+bc.. val pos = Order.findAll(
+    Conditions("name = :name and pay_type = :pay_type",
+        Map('name -> "Smith", 'pay_type -> "po")),
+    Order("id desc"))
+
+val joe = Person.findFirst(By('first_name -> "Joe", 'last_name -> "Smith"))
+
+joe.updateAttributes('first_name -> "Barney", 'email -> "barney@bedrock.com")
+
+p. You will find Skik versions of sample code from the Rails book in SkikBook.doc.
