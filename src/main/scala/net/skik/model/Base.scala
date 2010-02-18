@@ -4,8 +4,12 @@ import java.sql.Connection
 import net.skik.util.LangUtils._
 import net.skik.util.ReflectionUtils._
 
-case class Composition[A](val property: Symbol, val compositionClass: Class[A]) {
-  def composes(propertyName: String) = hasProperty(compositionClass, propertyName)
+case class Composition[A](val property: String, val compositionClass: Class[A], val mapping: Map[String, String]) {
+  def composes(propertyName: String) = hasProperty(compositionClass, propertyName) || mapping.contains(propertyName)
+  def propertyNameFor(columnName: String) = mapping.get(columnName) match {
+    case Some(propertyName) => propertyName
+    case None => columnName
+  }
 }
 
 abstract class BaseObject[T <: Base[T]](implicit modelType: Manifest[T]) {
@@ -16,8 +20,10 @@ abstract class BaseObject[T <: Base[T]](implicit modelType: Manifest[T]) {
   var compositions = List.empty[Composition[_]]
   private val modelClass = modelType.erasure.asInstanceOf[Class[T]]
 
-  def composedOf(attr: Symbol, compositionClass: Class[_]) {
-    compositions ::= Composition(attr, compositionClass)
+  def composedOf(attr: Symbol, className: Class[_] = classOf[Nothing], mapping: List[(Symbol, Symbol)] = List.empty[(Symbol, Symbol)]) {
+    compositions ::= Composition(attr.name,
+        (if (className == classOf[Nothing]) Class.forName(modelClass.getPackage.getName + "." + attr.name.capitalize) else className), 
+        Map(mapping.map(t => (t._1.name, t._2.name)).toArray:_*))
   }
   
   def findCompositionFor[A](propertyName: String): Option[Composition[A]] =

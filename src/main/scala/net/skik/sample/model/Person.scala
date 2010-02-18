@@ -14,7 +14,7 @@ class Person extends Base[Person] {
   
   @BeanProperty var count_first_name: Long = 0
   
-  override def toString = "Person no " + id + ", name = " + first_name + " " + last_name + (if (readonly) " R/O")
+  override def toString = "Person no " + id + ", name = " + first_name + " " + last_name + (if (readonly) " R/O" else "")
 
   override def equals(other: Any) = other match {
     case p: Person => p.id == id

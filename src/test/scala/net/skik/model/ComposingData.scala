@@ -24,11 +24,43 @@ class ComposingData extends AbstractModelTest {
   }
 
   @Test
-  def testFindPersonWithName {
-    val p = PersonWithName.find(1)
+  def testFindPersonWithName_CompositionAttrSpecified {
+    val p = PersonWithName1.find(1)
     
+    assertEquals("Piet", p.name.first_name)
     assertEquals("de", p.name.middle_name)
-    println(p)
+    assertEquals("Keizer", p.name.last_name)
+    assertEquals(Some(1), p.nr)
   }
   
+  @Test
+  def testFindPersonWithName_CompositionAttrClassSpecified {
+    val p = PersonWithName.find(1)
+    
+    assertEquals("Piet", p.name.first_name)
+    assertEquals("de", p.name.middle_name)
+    assertEquals("Keizer", p.name.last_name)
+    assertEquals(Some(1), p.nr)
+  }
+
+  @Test
+  def testFindPersonWithName_CompositionAttrClassMappingSpecified {
+    val p = PersonWithName3.find(1)
+    
+    assertEquals("Piet", p.name.first)
+    assertEquals("de", p.name.middle)
+    assertEquals("Keizer", p.name.last)
+    assertEquals(Some(1), p.nr)
+  }
+
+  @Test
+  def testFindPersonWithName_CompositionAttrClassMappingSpecified_NamedParams {
+    val p = PersonWithName4.find(1)
+    
+    assertEquals("Piet", p.mappedName.first)
+    assertEquals("de", p.mappedName.middle)
+    assertEquals("Keizer", p.mappedName.last)
+    assertEquals(Some(1), p.nr)
+  }
+
 }

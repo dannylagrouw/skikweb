@@ -23,10 +23,10 @@ class ClassMapper[T <: Base[T]](modelClass: Class[T]) extends Mapper[T] {
         baseObject[T, BaseObject[T]](modelClass).findCompositionFor(columnName) match {
           case Some(composition) =>
             println("MAP composition " + composition)
-            val compositionObject = nullOr(property(o, composition.property.name), composition.compositionClass.newInstance)
+            val compositionObject = nullOr(property(o, composition.property), composition.compositionClass.newInstance)
             //TODO check field mapping in composition
-            mapProperty(compositionObject, columnName, rs.getObject(i))
-            setProperty(o, composition.property.name, compositionObject)
+            mapProperty(compositionObject, composition.propertyNameFor(columnName), rs.getObject(i))
+            setProperty(o, composition.property, compositionObject)
           case None =>
             println("MAP no composition for " + columnName)
         }

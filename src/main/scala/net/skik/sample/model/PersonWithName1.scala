@@ -4,7 +4,7 @@ import net.skik.model.Base
 import net.skik.model.BaseObject
 import scala.reflect.BeanProperty
 
-class PersonWithName extends Base[PersonWithName] {
+class PersonWithName1 extends Base[PersonWithName1] {
 
   var id: Int = _
   var name: Name = _
@@ -13,7 +13,7 @@ class PersonWithName extends Base[PersonWithName] {
   
   var count_first_name: Long = 0
   
-  override def toString = "PersonWithName no " + id + ", name = " + name + (if (readonly) " R/O" else "")
+  override def toString = "PersonWithName1 no " + id + ", name = " + name + (if (readonly) " R/O" else "")
 
   override def equals(other: Any) = other match {
     case p: PersonWithName => p.id == id
@@ -21,7 +21,7 @@ class PersonWithName extends Base[PersonWithName] {
   }
 }
 
-object PersonWithName extends BaseObject[PersonWithName] {
+object PersonWithName1 extends BaseObject[PersonWithName1] {
   override val tableName = "people"
-  composedOf('name, classOf[Name])
+  composedOf('name)
 }
