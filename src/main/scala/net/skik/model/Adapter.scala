@@ -3,6 +3,7 @@ package net.skik.model
 import java.sql.Connection
 import org.apache.commons.beanutils._
 import net.skik.util.LangUtils._
+import net.skik.util.ReflectionUtils._
 
 abstract class Adapter {
 
@@ -48,7 +49,7 @@ abstract class Adapter {
     result.reverse
   }
   
-  def saveNew[T](conn: Connection, modelObject: T, tableName: String): Unit = {
+  def saveNew[T <: Base[T]](conn: Connection, modelObject: T, tableName: String): Unit = {
     // TODO cache this
     // TODO get schema name from config
     // TODO wrap jdbc
@@ -65,11 +66,11 @@ abstract class Adapter {
     
     val keyRS = stmt.getGeneratedKeys
     if (keyRS.next) {
-      PropertyUtils.setSimpleProperty(modelObject, "id", keyRS.getInt(1))
+      setProperty(modelObject, "id", keyRS.getInt(1))
     }
   }
     
-  def saveExisting[T](conn: Connection, modelObject: T, tableName: String): Unit = {
+  def saveExisting[T <: Base[T]](conn: Connection, modelObject: T, tableName: String): Unit = {
     // TODO cache this
     // TODO get schema name from config
     // TODO wrap jdbc
@@ -81,19 +82,27 @@ abstract class Adapter {
     update(conn, tableName, id, columns.toArray:_*)
   }
   
-  def getColumnValues[T](conn: Connection, modelObject: T, tableName: String): (Int, Map[String, Any]) = {
-    // TODO let T be T <: (def getKey: Any)???
+  def getColumnValues[T <: Base[T]](conn: Connection, modelObject: T, tableName: String): (Int, Map[String, Any]) = {
     var columns = Map.empty[String, Any]
     val dbmd = conn.getMetaData
     val colsRS = dbmd.getColumns(null, "inschr_rer", tableName, null)
     var id: Int = 0
     while (colsRS.next) {
       val columnName = colsRS.getString("COLUMN_NAME")
-      if (PropertyUtils.isReadable(modelObject, columnName)) {
+      if (hasReadProperty(modelObject.getClass, columnName)) {
         if (columnName == "id")
-          id = PropertyUtils.getSimpleProperty(modelObject, columnName).asInstanceOf[Int]
+          id = property(modelObject, columnName)
         else
-          columns += (columnName -> PropertyUtils.getSimpleProperty(modelObject, columnName))
+          columns += (columnName -> property(modelObject, columnName))
+      } else {
+        baseObject[T, BaseObject[T]](modelObject.getClass.asInstanceOf[Class[T]]).findCompositionFor(columnName) match {
+          case Some(composition) =>
+            val compositionObject: Object = property(modelObject, composition.property)
+            if (compositionObject != null) {
+              columns += (columnName -> property(compositionObject, composition.propertyNameFor(columnName)))
+            }
+          case _ =>
+        }
       }
     }
     (id, columns)

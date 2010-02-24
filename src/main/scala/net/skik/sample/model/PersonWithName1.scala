@@ -4,6 +4,9 @@ import net.skik.model.Base
 import net.skik.model.BaseObject
 import scala.reflect.BeanProperty
 
+/**
+ * Person with name mapped, to default class (which is Name).
+ */
 class PersonWithName1 extends Base[PersonWithName1] {
 
   var id: Int = _
@@ -16,7 +19,7 @@ class PersonWithName1 extends Base[PersonWithName1] {
   override def toString = "PersonWithName1 no " + id + ", name = " + name + (if (readonly) " R/O" else "")
 
   override def equals(other: Any) = other match {
-    case p: PersonWithName => p.id == id
+    case p: PersonWithName1 => p.id == id
     case _ => false
   }
 }

@@ -5,7 +5,7 @@ import net.skik.util.LangUtils._
 import net.skik.util.ReflectionUtils._
 
 case class Composition[A](val property: String, val compositionClass: Class[A], val mapping: Map[String, String]) {
-  def composes(propertyName: String) = hasProperty(compositionClass, propertyName) || mapping.contains(propertyName)
+  def composes(propertyName: String) = hasReadProperty(compositionClass, propertyName) || mapping.contains(propertyName)
   def propertyNameFor(columnName: String) = mapping.get(columnName) match {
     case Some(propertyName) => propertyName
     case None => columnName
@@ -28,6 +28,8 @@ abstract class BaseObject[T <: Base[T]](implicit modelType: Manifest[T]) {
   
   def findCompositionFor[A](propertyName: String): Option[Composition[A]] =
     compositions.find(_.composes(propertyName)).asInstanceOf[Option[Composition[A]]]
+  def findCompositionNamed[A](compositionName: String): Option[Composition[A]] =
+    compositions.find(_.property == compositionName).asInstanceOf[Option[Composition[A]]]
   
   def find(id: Long): T = Base.find(id, tableName, modelClass)
   
@@ -194,9 +196,9 @@ abstract class Base[T <: Base[T]](implicit modelType: Manifest[T]) {
 
   def save_! = {
     if (isNew)
-      Base.adapter.saveNew(Base.connection, this, tableName)
+      Base.adapter.saveNew(Base.connection, this.asInstanceOf[T], tableName)
     else
-      Base.adapter.saveExisting(Base.connection, this, tableName)
+      Base.adapter.saveExisting(Base.connection, this.asInstanceOf[T], tableName)
     true
   }
   
