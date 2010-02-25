@@ -51,5 +51,8 @@ object ReflectionUtils {
           case None => throw e
         }
     }
-  
+
+  def underscoreToCamel(us: String) = {
+    us.split("_").map(_.capitalize).mkString
+  }
 }

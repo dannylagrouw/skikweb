@@ -3,6 +3,7 @@ package net.skik.model
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
 import net.skik.util.LangUtils._
+import net.skik.util.ReflectionUtils
 import net.skik.util.ReflectionUtils._
 
 class CompositionMapper[A](val composition: Composition[A]) {
@@ -25,13 +26,15 @@ class ClassMapper[T <: Base[T]](modelClass: Class[T]) extends Mapper[T] {
 
   //var metaData: ResultSetMetaData = _
   
+  var baseObject = ReflectionUtils.baseObject[T, BaseObject[T]](modelClass)
+  
   override def map(rs: ResultSet) = {
     val o = modelClass.newInstance.asInstanceOf[T]
     if (readonly) o.readonly = true
     val compositionMappers = new scala.collection.mutable.HashMap[Composition[T], CompositionMapper[T]]
     for (i <- 1 to metaData.getColumnCount) {
       val columnName = metaData.getColumnName(i)
-      baseObject[T, BaseObject[T]](modelClass).findCompositionFor(columnName) match {
+      baseObject.findCompositionFor(columnName) match {
         case Some(composition: Composition[T]) =>
           println("MAP composition " + composition + " property " + columnName)
           val compositionMapper = compositionMappers.getOrElseUpdate(composition, (new CompositionMapper(composition)))
@@ -39,7 +42,7 @@ class ClassMapper[T <: Base[T]](modelClass: Class[T]) extends Mapper[T] {
 //          val compositionObject = nullOr(property(o, composition.property), composition.compositionClass.newInstance)
 //          mapProperty(compositionObject, composition.propertyNameFor(columnName), rs.getObject(i))
 //          setProperty(o, composition.property, compositionObject)
-        case None =>
+        case None => 
           if (hasWriteProperty(o.getClass, columnName)) {
             println("MAP iswriteable " + columnName)
             mapProperty(o, columnName, rs.getObject(i))

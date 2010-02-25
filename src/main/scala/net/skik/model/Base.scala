@@ -132,7 +132,7 @@ abstract class BaseObject[T <: Base[T]](implicit modelType: Manifest[T]) {
   def execFindQuery[U](mode: Symbol, mapper: Mapper[U])(f: Query => _): List[U] = {
     val query = Base.adapter.createQuery(QueryMode(mode)).table(tableName)
     f(query)
-    Base.execQuery(query, mapper)
+    Base.execFindQuery(query, mapper)
   }
   
   def newFrom(values: Map[Symbol, Any]): T = {
@@ -176,7 +176,25 @@ abstract class BaseObject[T <: Base[T]](implicit modelType: Manifest[T]) {
   def destroyAll(conditions: Conditions): Unit =
     findAll(conditions).foreach(_.destroy)
 
+
+  var parents = List.empty[Parent[_]]
+  
+  def belongsToTEMP[B <: Base[B]](propertyName: String, className: Class[B] = null, foreignKey: String = null, conditions: String = null) {
+    belongsTo(Symbol(propertyName), className, foreignKey, conditions)
+  }
+  def belongsTo[B <: Base[B]](propertyName: Symbol, className: Class[B] = null, foreignKey: String = null, conditions: String = null) {
+    parents ::= new Parent(propertyName,
+        if (className == null) Class.forName(underscoreToCamel(propertyName.name)).asInstanceOf[Class[B]] else className,
+        if (foreignKey == null) propertyName.name + "_id" else foreignKey,
+        if (conditions == null) None else Some(conditions))
+  }
+  
+  def findParentFor(foreignKey: String) = {
+    parents.find(_.foreignKey == foreignKey)
+  }
 }
+
+case class Parent[B <: Base[B]](val propertyName: Symbol, className: Class[B], foreignKey: String, conditions: Option[String])
 
 abstract class Base[T <: Base[T]](implicit modelType: Manifest[T]) {
   
@@ -213,6 +231,11 @@ abstract class Base[T <: Base[T]](implicit modelType: Manifest[T]) {
     Base.adapter.delete(Base.connection, tableName, thisId)
     freeze
   }
+  
+  override def equals(other: Any) = other match {
+    case otherT: T => otherT.getClass == modelClass && property(otherT, primaryKey) == thisId
+    case _ => false
+  }
 
 }
 
@@ -238,7 +261,11 @@ object Base {
     connection = adapter.establishConnection(host, database, username, password)
   }
   
-  def execQuery[T](query: Query, mapper: Mapper[T]): List[T] = {
+  def execFindQuery[T](query: Query): List[Map[String, Any]] = {
+    adapter.execute(connection, query, new MapMapper)
+  }
+
+  def execFindQuery[T](query: Query, mapper: Mapper[T]): List[T] = {
     adapter.execute(connection, query, mapper)
   }
 

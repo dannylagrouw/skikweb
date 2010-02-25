@@ -11,7 +11,7 @@ class MapMapper extends Mapper[Map[String, Any]] {
     var m = Map.empty[String, Any]
     for (i <- 1 to metaData.getColumnCount) {
       val columnName = metaData.getColumnName(i)
-      m(columnName) = rs.getObject(i)
+      m += columnName -> rs.getObject(i)
     }
     m
   }

@@ -16,10 +16,6 @@ class Person extends Base[Person] {
   
   override def toString = "Person no " + id + ", name = " + first_name + " " + last_name + (if (readonly) " R/O" else "")
 
-  override def equals(other: Any) = other match {
-    case p: Person => p.id == id
-    case _ => false
-  }
 }
 
 object Person extends BaseObject[Person] {
