@@ -15,10 +15,21 @@ object ReflectionUtils {
     val c = objectClass(baseClass)
     c.getMethod(propertyName).invoke(c.getField("MODULE$").get(null)).asInstanceOf[A]
   }
+
+  def objectInvoke[A](baseClass: Class[_], methodName: String, args: Object*): A = {
+    val c = objectClass(baseClass)
+    println(c.getMethods.filter(_.getName == methodName).mkString("\n"))
+    c.getMethod(methodName, args.map(_.getClass):_*).invoke(c.getField("MODULE$").get(null), args:_*).asInstanceOf[A]
+  }
   
   def baseObject[A <: Base[A], B <: BaseObject[A]](baseClass: Class[A]): B = {
     val c = objectClass(baseClass)
     c.getField("MODULE$").get(null).asInstanceOf[B]
+  }
+
+  def baseObjectTEMP(baseClass: Class[_]): BaseObject[_] = {
+    val c = objectClass(baseClass)
+    c.getField("MODULE$").get(null).asInstanceOf[BaseObject[_]]
   }
 
   def setterName(propertyName: String) = propertyName + "_$eq"

@@ -5,6 +5,10 @@ import java.sql.ResultSetMetaData
 import net.skik.util.LangUtils._
 import net.skik.util.ReflectionUtils
 import net.skik.util.ReflectionUtils._
+import net.sf.cglib.proxy.Enhancer
+import net.sf.cglib.proxy.MethodInterceptor
+import net.sf.cglib.proxy.MethodProxy
+import java.lang.reflect.Method
 
 class CompositionMapper[A](val composition: Composition[A]) {
   var params = List.empty[Object]
@@ -28,8 +32,31 @@ class ClassMapper[T <: Base[T]](modelClass: Class[T]) extends Mapper[T] {
   
   var baseObject = ReflectionUtils.baseObject[T, BaseObject[T]](modelClass)
   
+  def newInstance: T = {
+    if (baseObject.parents.isEmpty) {
+      modelClass.newInstance.asInstanceOf[T]
+    } else {
+      Enhancer.create(modelClass, new MethodInterceptor {
+        def intercept(obj: Object, method: Method, args: Array[Object], proxy: MethodProxy): Object = {
+          println("intercepting " + method.getName)
+          baseObject.parents.find(p => method.getName == p.propertyName || method.getName == setterName(p.propertyName)) match {
+            case Some(parent) if (method.getName == parent.propertyName) =>
+              println("getter called: " + method.getName)
+              parent.find(obj.asInstanceOf[T]).asInstanceOf[Object]
+            case Some(parent) =>
+              println("setter called: " + method.getName); 
+              parent.change(obj.asInstanceOf[T], args(0))
+            case _ => 
+              println("other call: " + method.getName); 
+              proxy.invokeSuper(obj, args)
+          }
+        }
+      }).asInstanceOf[T]
+    }
+  }
+  
   override def map(rs: ResultSet) = {
-    val o = modelClass.newInstance.asInstanceOf[T]
+    val o = newInstance
     if (readonly) o.readonly = true
     val compositionMappers = new scala.collection.mutable.HashMap[Composition[T], CompositionMapper[T]]
     for (i <- 1 to metaData.getColumnCount) {

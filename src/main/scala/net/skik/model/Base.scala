@@ -176,16 +176,16 @@ abstract class BaseObject[T <: Base[T]](implicit modelType: Manifest[T]) {
   def destroyAll(conditions: Conditions): Unit =
     findAll(conditions).foreach(_.destroy)
 
-
-  var parents = List.empty[Parent[_]]
+    //TODO cache in map on propertyname
+  var parents = List.empty[Parent[T, _]]
   
-  def belongsToTEMP[B <: Base[B]](propertyName: String, className: Class[B] = null, foreignKey: String = null, conditions: String = null) {
-    belongsTo(Symbol(propertyName), className, foreignKey, conditions)
-  }
   def belongsTo[B <: Base[B]](propertyName: Symbol, className: Class[B] = null, foreignKey: String = null, conditions: String = null) {
+    belongsToInternal(propertyName.name, className, foreignKey, conditions)
+  }
+  protected def belongsToInternal[B <: Base[B]](propertyName: String, className: Class[B] = null, foreignKey: String = null, conditions: String = null) {
     parents ::= new Parent(propertyName,
-        if (className == null) Class.forName(underscoreToCamel(propertyName.name)).asInstanceOf[Class[B]] else className,
-        if (foreignKey == null) propertyName.name + "_id" else foreignKey,
+        if (className == null) Class.forName(underscoreToCamel(propertyName)).asInstanceOf[Class[B]] else className,
+        if (foreignKey == null) propertyName + "_id" else foreignKey,
         if (conditions == null) None else Some(conditions))
   }
   
@@ -194,7 +194,15 @@ abstract class BaseObject[T <: Base[T]](implicit modelType: Manifest[T]) {
   }
 }
 
-case class Parent[B <: Base[B]](val propertyName: Symbol, className: Class[B], foreignKey: String, conditions: Option[String])
+case class Parent[A <: Base[A], B <: Base[B]](val propertyName: String, className: Class[B], foreignKey: String, conditions: Option[String]) {
+  def find(obj: A): B = {
+    val bo: BaseObject[B] = baseObject(className)
+    bo.find(property(obj, foreignKey))
+  }
+  def change(obj: A, fkObject: Object) = {
+    setProperty(obj, foreignKey, property(fkObject, "id"))
+  }
+}
 
 abstract class Base[T <: Base[T]](implicit modelType: Manifest[T]) {
   
